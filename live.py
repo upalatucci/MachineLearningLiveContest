@@ -4,16 +4,17 @@ from keras.models import load_model
 import numpy as np
 import time
 import argparse
+import os 
 
 STEPS = 10
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model", help="Path of different model. Default is ../model.h5", default="../model.h5")
+    parser.add_argument("-m", "--model", help="Path of different model. Default is ../model.h5", default=os.path.join(os.path.dirname(os.getcwd()), "model.h5"))
     model_path = parser.parse_args().model
     labels = ["Risata", "Pianto bimbo", "Tosse", "Starnuto", "Passi, camminare", "Applauso", "Cane", "Gatto", "Acqua", "Motore", "Sveglia", "Sirena"]
     model = load_model(model_path)
-    report_file = open("../report.txt", "w")
+    report_file = open(os.path.join(os.path.dirname(os.getcwd()), "report.txt"), "w")
     extractor = Extractor()
     record_thread = RecordandSaveThread(steps=STEPS)
     record_thread.start()
@@ -26,10 +27,8 @@ if __name__ == '__main__':
     while True:
         time.sleep(1)
         features = extractor.extract_audioset_embedding("test{}.wav".format(count))
-        count += 1
+        count = (count + 1) % STEPS
 
-        if count == STEPS:
-            count = 0
         array_features = np.append(array_features, features, axis=0)
         
         if np.shape(array_features)[0] == STEPS:
