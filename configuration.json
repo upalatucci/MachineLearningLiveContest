@@ -1,0 +1,16 @@
+{
+  "models": [
+    {
+      "path": "/Users/ugopalatucci/Desktop/MachineLearningContest/model_1step_3att.h5",
+      "steps": 1
+    },
+    {
+      "path": "/Users/ugopalatucci/Desktop/MachineLearningContest/model_3step_3att.h5",
+      "steps": 3
+    },
+    {
+      "path": "/Users/ugopalatucci/Desktop/MachineLearningContest/model_5steps_3att.h5",
+      "steps": 5
+    }
+  ]
+}

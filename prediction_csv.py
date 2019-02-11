@@ -2,12 +2,19 @@ import sys
 import argparse
 import os
 import numpy as np
-import live
 import csv
 from keras.models import load_model
 
 MODEL_PATH = "../model.h5"
 
+MODEL_STEPS = 10
+class_to_consider = [16, 23, 47, 49, 53, 67, 74, 81, 288, 343, 395, 396]
+"""
+
+Predizione utilizzando argmax!
+Perchè model.predict ritorna un array di 12 elementi che rappresentano le probabilità di ogni singola label. 
+
+"""
 if __name__ == "__main__":
 	assert(len(sys.argv) == 3)
 	csv_path = sys.argv[1]
@@ -22,9 +29,10 @@ if __name__ == "__main__":
 			for row in csv_reader:
 				second_array = np.array([int(x) for x in row])
 				features_int = np.vstack((features_int, second_array))
-				if features_int.shape[0] == live.STEPS:
+				if features_int.shape[0] == MODEL_STEPS:
 					prediction = model.predict(np.array([features_int]))
-					file_results.write("{} {}\n".format(csv_name.split("/")[-1], np.argmax(prediction)))
+					print(np.argmax(prediction))
+					file_results.write("{} {}\n".format(csv_name.split("/")[-1], class_to_consider[np.argmax(prediction)]))
 					features_int = np.empty((0, 128))
 			
 

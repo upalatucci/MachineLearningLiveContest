@@ -16,6 +16,6 @@ class RecordandSaveThread(threading.Thread):
             record = sd.rec(self.duration * self.frequency, self.frequency, channels=2)
             sd.wait()
             sf.write("test{}.wav".format(count), record, self.frequency)
-            count += 1
+            count = (count + 1) % self.steps
             if count == self.steps:
                 count = 0
