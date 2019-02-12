@@ -1,7 +1,5 @@
 import os
 import soundfile
-import librosa
-import numpy as np
 import tensorflow as tf
 import vggish_input
 import vggish_params
@@ -9,19 +7,6 @@ import vggish_postprocess
 import vggish_slim
 slim = tf.contrib.slim
 
-    
-def read_audio(path, target_fs=None):
-    (audio, fs) = soundfile.read(path)
-
-    if audio.ndim > 1:
-        audio = np.mean(audio, axis=1)
-        
-    if target_fs is not None and fs != target_fs:
-        audio = librosa.resample(audio, orig_sr=fs, target_sr=target_fs)
-        fs = target_fs
-        
-    return audio, fs
-    
 
 class Extractor:
     def __init__(self, checkpoint_path='vggish_model.ckpt', pcm_params_path='vggish_pca_params.npz'):
@@ -48,7 +33,7 @@ class Extractor:
         sample_rate = vggish_params.SAMPLE_RATE
         
         # Read audio
-        (audio, _) = read_audio(audio_path, target_fs=sample_rate)
+        (audio, fs) = soundfile.read(audio_path)
 
         # Extract log mel feature
         logmel = vggish_input.waveform_to_examples(audio, sample_rate)
