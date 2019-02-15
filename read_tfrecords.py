@@ -1,9 +1,11 @@
 import tensorflow as tf
 import os
 import numpy as np
-from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.utils import class_weight
 
+UNBAL_TRAIN_DIRECTORY = "../audioset_v1_embeddings/unbal_train/"
+BAL_TRAIN_DIRECTORY = "../audioset_v1_embeddings/bal_train/"
+EVAL_DIRECTORY = "../audioset_v1_embeddings/eval/"
 
 def parse(serialized):
   context_features = {
@@ -62,10 +64,6 @@ def extract_dataset(path, classes, steps=2):
     return np.array(audio_features), np.array(labels), weight_labels
 
 
-UNBAL_TRAIN_DIRECTORY = "../audioset_v1_embeddings/unbal_train/"
-BAL_TRAIN_DIRECTORY = "../audioset_v1_embeddings/bal_train/"
-EVAL_DIRECTORY = "../audioset_v1_embeddings/eval/"
-
 class_to_consider = [16, 23, 47, 49, 53, 67, 74, 81, 288, 343, 395, 396]
 classes_num = len(class_to_consider)
 
@@ -73,29 +71,3 @@ classes_num = len(class_to_consider)
 #audio_features_bal_train, labels_bal_train, weight_bal_train = extract_dataset(BAL_TRAIN_DIRECTORY, class_to_consider)
 #class_weights_train = class_weight.compute_class_weight('balanced', np.unique(class_weights_train),class_weights_train)
 #weight_bal_train = class_weight.compute_class_weight('balanced', np.unique(weight_bal_train),weight_bal_train)
-
-
-from src.custom_multiclassifier import CustomMulticlassifier
-
-multiclass = CustomMulticlassifier("configuration.json")
-
-for i in range(1, 11):
-    audio_features_val, labels_val, class_weights_val = extract_dataset(EVAL_DIRECTORY, class_to_consider, i)
-    labels_max = np.argmax(labels_val, axis=1)
-
-    labels = []
-    for l in labels_max:
-      labels.append(class_to_consider[l])
-
-    prediction = []
-
-    for audio in audio_features_val:
-      prediction.append(multiclass.predict(audio)[0])
-
-    report = classification_report(labels, prediction)
-
-    print("Report for {} steps".format(i))
-    print(report)
-
-    cm = confusion_matrix(labels, prediction)
-    print(cm)

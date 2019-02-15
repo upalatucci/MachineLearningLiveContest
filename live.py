@@ -1,10 +1,26 @@
-from record_and_save import RecordandSaveThread
-from extract_audioset_embedding import Extractor
-from custom_multiclassifier import CustomMulticlassifier
-import numpy as np
-import time
+"""
+    At the start, the window have size 0. Every second, the programm read the wav file create from the ReadandSaveThread
+    and convert the audio information into features using the Extractor.
+
+    So, when the window have the minimum size to be processed from the CustomMulticlassifier, the prediction begin.
+    Every second we have the prediction and the window became to be larger.
+    With a larger window the CustomMulticlassifier use a model with a
+    time_steps bigger and also can give different predictions to have a higher accuracy. But at the same time, with
+    a very big window, the final prediction is influensed by a very old events, so with a smaller window we give a
+    prediction only for earliest events.
+
+    In the live can be setted the size of the maximum window to use for the prediction (-w) and also the path
+    of the configuration to use to build CustomMulticlassifier.
+    The default value of window is the steps of the models of the multiclassifier with the maximum number of steps.
+"""
 import argparse
 import os
+import time
+
+import numpy as np
+from custom_multiclassifier import CustomMulticlassifier
+from extract_audioset_embedding import Extractor
+from record_and_save import RecordandSaveThread
 
 labels = {
     16: "Risata",

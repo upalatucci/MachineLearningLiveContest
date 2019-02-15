@@ -1,6 +1,19 @@
+'''
+    CustomMulticlassifier is used in the project to assembly a multiclassifier with different models.
+
+    The configuration given in input to the constructor should have and array of models and for each model contain
+    information concerns number of steps supported from the model and the path to use for load the model.
+
+    The CustomMulticlassifier choose the best model for the given audio array to predict.
+    The algorithm choose the model with the possible higher steps and use it for the prediction.
+    If the audio array have a major dimension in steps of the model's steps, the model give different
+    predictions. The class with the higher probability in theese predictions is returned with the average probability.
+'''
+
 import json
-from keras.models import load_model
+
 import numpy as np
+from keras.models import load_model
 
 MODELS_FIELD = "models"
 PATH_FIELD = "path"
@@ -17,20 +30,27 @@ class CustomMulticlassifier:
         self.expert_model = None
         self.classes_id = [16, 23, 47, 49, 53, 67, 74, 81, 288, 343, 395, 396]
         self.max_steps = 0
+        self.min_steps = None
 
-        for models in models_configuration[MODELS_FIELD]:
-            self.models.append(load_model(models[PATH_FIELD]))
-            if models[STEPS_FIELD] in self.steps:
-                print("There is already a model with this number of steps: {}".format(models[STEPS_FIELD]))
-                raise Exception()
-            self.steps.append(models[STEPS_FIELD])
-            if models[STEPS_FIELD] > self.max_steps:
-                self.max_steps = models[STEPS_FIELD]
+        try:
+            for models in models_configuration[MODELS_FIELD]:
+                self.models.append(load_model(models[PATH_FIELD]))
+                if models[STEPS_FIELD] in self.steps:
+                    print("There is already a model with this number of steps: {}".format(models[STEPS_FIELD]))
+                    raise Exception()
+                self.steps.append(models[STEPS_FIELD])
+                if models[STEPS_FIELD] > self.max_steps:
+                    self.max_steps = models[STEPS_FIELD]
+                if self.min_steps is None or models[STEPS_FIELD] < self.min_steps:
+                    self.min_steps = models[STEPS_FIELD]
 
-        if EXPERT_MODEL in models_configuration:
-            self.expert_model = load_model(models_configuration[EXPERT_MODEL][PATH_FIELD])
-            self.expert_steps = models_configuration[EXPERT_MODEL][STEPS_FIELD]
-            self.expert_classes = models_configuration[EXPERT_MODEL][CLASSES_FIELD]
+        except:
+            print("You should insert into the configuration file for every model the path and steps")
+            raise Exception()
+
+        if len(self.models) == 0:
+            print("You should insert at least one model into the configuration file with path and steps")
+            raise Exception()
 
     def prediction_different_windows(self, array, model, steps_model):
         steps_array = array.shape[0]
@@ -39,17 +59,13 @@ class CustomMulticlassifier:
             self.prediction = np.argmax(predict)
             self.accuracy = predict[self.prediction]
         else:
-            predictions = []
-            accuracy = []
+            predictions = np.zeros((len(self.classes_id)))
             for i in range(steps_array - steps_model + 1):
                 predict = model.predict(np.array([array[i:i+steps_model]]))[0]
-                index = np.argmax(predict)
-                predictions.append(index)
-                accuracy.append(predict[index])
+                predictions = np.sum([predictions, predict], axis=0)
 
-            index = np.argmax(np.array(predictions))
-            self.prediction = predictions[index]
-            self.accuracy = accuracy[index]
+            self.prediction = np.argmax(np.array(predictions))
+            self.accuracy = predictions[self.prediction]/(steps_array - steps_model + 1)
 
     def predict(self, array):
         steps_array = array.shape[0]
@@ -73,9 +89,6 @@ class CustomMulticlassifier:
             steps_model_chose = self.steps[-1]
 
         self.prediction_different_windows(array, model_to_chose, steps_model_chose)
-
-        if self.expert_model is not None and self.prediction in self.expert_classes:
-            self.prediction_different_windows(array, self.expert_model, self.expert_steps)
 
         return self.classes_id[self.prediction], self.accuracy
 

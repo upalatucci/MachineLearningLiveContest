@@ -1,10 +1,13 @@
 import os
+
 import soundfile
 import tensorflow as tf
+
 import vggish_input
 import vggish_params
 import vggish_postprocess
 import vggish_slim
+
 slim = tf.contrib.slim
 
 
