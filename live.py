@@ -64,7 +64,6 @@ if __name__ == '__main__':
         print("Window Size shoud be a number")
         sys.exit()
 
-    report_file = open(os.path.join(os.path.dirname(os.getcwd()), "report.txt"), "w")
     extractor = Extractor()
     record_thread = RecordandSaveThread(steps=size_window)
     record_thread.start()
