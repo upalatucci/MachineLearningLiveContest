@@ -102,11 +102,9 @@ model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accurac
 
 print("Model compiled")
 
-audio_features_train_unbal, labels_train_unbal, class_weights_train = extract_dataset(UNBAL_TRAIN_DIRECTORY, class_to_consider,time_steps)
-audio_features_train_bal, labels_train_bal, weight_bal_train = extract_dataset(BAL_TRAIN_DIRECTORY, class_to_consider,time_steps)
+audio_features_train_unbal, labels_train_unbal, class_weights_unbal = extract_dataset(UNBAL_TRAIN_DIRECTORY, class_to_consider,time_steps)
+audio_features_train_bal, labels_train_bal, class_weights_bal = extract_dataset(BAL_TRAIN_DIRECTORY, class_to_consider,time_steps)
 audio_features_val, labels_val, _ = extract_dataset(EVAL_DIRECTORY, class_to_consider,time_steps)
-class_weights_unbal = class_weight.compute_class_weight('balanced', np.unique(class_weights_train),class_weights_train)
-class_weights_bal = class_weight.compute_class_weight('balanced', np.unique(weight_bal_train),weight_bal_train)
 
 # Merge of datasets
  
@@ -124,13 +122,13 @@ for i in audio_features_train_bal:
 for i in labels_train_bal:
   labels_train_unbal_bal.append(i) 
 
-class_weight_bal_unbal=[]
-for i in class_weights_bal:
-  class_weight_bal_unbal.append(i)
+class_weight_unbal_bal=[]
 for i in class_weights_unbal:
-  class_weight_bal_unbal.append(i)
+  class_weight_unbal_bal.append(i)
+for i in class_weights_bal:
+  class_weight_unbal_bal.append(i)
 
-class_weights = class_weight.compute_class_weight('balanced', np.unique(class_weight_bal_unbal),class_weight_bal_unbal)
+class_weights = class_weight.compute_class_weight('balanced', np.unique(class_weight_unbal_bal),class_weight_unbal_bal)
 
 early_stop = EarlyStopping(monitor='val_loss', min_delta=0.01, patience=5, verbose=0, mode='auto')
 
