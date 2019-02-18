@@ -4,8 +4,7 @@
     in order to build the target model.
 
     As you can see in the documentation of the project we use different time_steps to predict different audio array.
-    So, if we change timesteps we need also to change the number of epochs. Infact with a very large number of
-    time_steps we need also, to train the model properly, a major number of epochs.
+    
 """
 import keras.backend as K
 import numpy as np
@@ -14,15 +13,11 @@ from keras.layers import (Input, Dense, BatchNormalization, Dropout, Lambda,
                           Activation, Concatenate)
 from keras.models import Model
 from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping
 from sklearn.utils import class_weight
 
 from read_tfrecords import extract_dataset, UNBAL_TRAIN_DIRECTORY, BAL_TRAIN_DIRECTORY, EVAL_DIRECTORY
 
-class_weights_unbal = [ 0.96078073,  2.31306902,  6.9915668,   4.85723096,  3.35935167,  2.47322971,
-                    0.39771752,  1.40655416,  0.6240393,  0.33085486, 11.48942378,  0.64991542]
-
-class_weights_bal = [1.1547619,  2.15555556, 2.15555556, 2.15555556, 2.15555556, 2.02083333,
-                        0.47374847, 1.06010929, 0.45221445, 0.6953405,  2.08602151, 0.62479871]
 
 def attention_pooling(inputs, **kwargs):
   [out, att] = inputs
@@ -50,12 +45,11 @@ class_to_consider = [16, 23, 47, 49, 53, 67, 74, 81, 288, 343, 395, 396]
 classes_num = len(class_to_consider)
 hidden_units = 1024
 drop_rate = 0.4
-batch_size = 256
+batch = 256
 learning_rate = 0.001
-time_steps = 1
+time_steps = 3 
 freq_bins = 128
-epochs_unbal = 20
-epochs_bal = 10
+epoch = 30
 
 # Embedded layers
 input_layer = Input(shape=(time_steps, freq_bins))
@@ -108,15 +102,38 @@ model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accurac
 
 print("Model compiled")
 
+audio_features_train_unbal, labels_train_unbal, class_weights_train = extract_dataset(UNBAL_TRAIN_DIRECTORY, class_to_consider,time_steps)
+audio_features_train_bal, labels_train_bal, weight_bal_train = extract_dataset(BAL_TRAIN_DIRECTORY, class_to_consider,time_steps)
+audio_features_val, labels_val, _ = extract_dataset(EVAL_DIRECTORY, class_to_consider,time_steps)
+class_weights_unbal = class_weight.compute_class_weight('balanced', np.unique(class_weights_train),class_weights_train)
+class_weights_bal = class_weight.compute_class_weight('balanced', np.unique(weight_bal_train),weight_bal_train)
 
-audio_features_train, labels_train, class_weights_train = extract_dataset(UNBAL_TRAIN_DIRECTORY, class_to_consider)
-audio_features_bal_train, labels_bal_train, weight_bal_train = extract_dataset(BAL_TRAIN_DIRECTORY, class_to_consider)
-audio_features_val, labels_val, _ = extract_dataset(EVAL_DIRECTORY, class_to_consider)
-class_weights_train = class_weight.compute_class_weight('balanced', np.unique(class_weights_train),class_weights_train)
-weight_bal_train = class_weight.compute_class_weight('balanced', np.unique(weight_bal_train),weight_bal_train)
+# Merge of datasets
+ 
 
-model.fit(audio_features_train, labels_train, class_weight=class_weights_train, epochs=epochs_unbal, validation_data=(audio_features_val, labels_val), batch_size=batch_size)
+labels_train_unbal_bal = []
+audio_features_train_unbal_bal = []
 
-model.fit(audio_features_bal_train, labels_bal_train, class_weight=weight_bal_train, epochs=epochs_bal, validation_data=(audio_features_val, labels_val), batch_size=batch_size)
+for i in audio_features_train_unbal:
+  audio_features_train_unbal_bal.append(i)
+for i in labels_train_unbal:
+  labels_train_unbal_bal.append(i)
+  
+for i in audio_features_train_bal:
+  audio_features_train_unbal_bal.append(i)
+for i in labels_train_bal:
+  labels_train_unbal_bal.append(i) 
+
+class_weight_bal_unbal=[]
+for i in class_weights_bal:
+  class_weight_bal_unbal.append(i)
+for i in class_weights_unbal:
+  class_weight_bal_unbal.append(i)
+
+class_weights = class_weight.compute_class_weight('balanced', np.unique(class_weight_bal_unbal),class_weight_bal_unbal)
+
+early_stop = EarlyStopping(monitor='val_loss', min_delta=0.01, patience=5, verbose=0, mode='auto')
+
+history = model.fit(np.array(audio_features_train_unbal_bal),np.array(labels_train_unbal_bal), validation_data=(audio_features_val, labels_val), callbacks = [early_stop], epochs=epoch, batch_size=batch, class_weight = class_weights, verbose=0)
 
 model.save("model.h5")

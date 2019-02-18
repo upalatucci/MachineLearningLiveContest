@@ -1,11 +1,17 @@
+"""
+   This script contain methods to read the TFRecord files. 
+   extract_dataset allow to divide the 10 second video into different parts depending on the number of steps used. 
+   Also the labels are repeated into the labels array. In this way we don't lost parts of dataset really importants
+   when we want to use different step size to train differents models.  
+"""
+
 import tensorflow as tf
 import os
 import numpy as np
-from sklearn.utils import class_weight
 
-UNBAL_TRAIN_DIRECTORY = "../audioset_v1_embeddings/unbal_train/"
-BAL_TRAIN_DIRECTORY = "../audioset_v1_embeddings/bal_train/"
-EVAL_DIRECTORY = "../audioset_v1_embeddings/eval/"
+UNBAL_TRAIN_DIRECTORY = "./unbal_train/"
+BAL_TRAIN_DIRECTORY = "./bal_train/"
+EVAL_DIRECTORY = "./eval/"
 
 def parse(serialized):
   context_features = {
@@ -31,7 +37,7 @@ def get_iterator_for_directory(path):
   return iterator.get_next()
 
 
-def extract_dataset(path, classes, steps=2):
+def extract_dataset(path, classes, steps):
   element = get_iterator_for_directory(path)
   n_classes = len(classes)
   labels_array = np.zeros(n_classes)
@@ -67,7 +73,5 @@ def extract_dataset(path, classes, steps=2):
 class_to_consider = [16, 23, 47, 49, 53, 67, 74, 81, 288, 343, 395, 396]
 classes_num = len(class_to_consider)
 
-#audio_features_train, labels_train, class_weights_train = extract_dataset(UNBAL_TRAIN_DIRECTORY, class_to_consider)
-#audio_features_bal_train, labels_bal_train, weight_bal_train = extract_dataset(BAL_TRAIN_DIRECTORY, class_to_consider)
-#class_weights_train = class_weight.compute_class_weight('balanced', np.unique(class_weights_train),class_weights_train)
-#weight_bal_train = class_weight.compute_class_weight('balanced', np.unique(weight_bal_train),weight_bal_train)
+
+
